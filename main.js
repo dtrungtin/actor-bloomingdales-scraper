@@ -184,7 +184,10 @@ Apify.main(async () => {
                 const itemId = json.product.id;
                 const name = $('.product-title h1').text().trim();
                 const color = $('.color-display-name').text();
-                const sizes = $('.size-dropdown option').map(o => $(o).text()).toArray();
+                const sizes = [];
+                $('.size-dropdown').find('option').each((i,op) => {
+                    sizes.push($(op).text());
+                });
                 const price = $('.final-price').text().trim();
 
                 const pageResult = {
