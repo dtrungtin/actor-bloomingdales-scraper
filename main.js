@@ -186,7 +186,9 @@ Apify.main(async () => {
                 const color = $('.color-display-name').text();
                 const sizes = [];
                 $('.size-dropdown').find('option').each((i,op) => {
-                    sizes.push($(op).text());
+                    if (i > 0) {
+                        sizes.push($(op).text().trim());
+                    }
                 });
                 const price = $('.final-price').text().trim();
 
