@@ -112,8 +112,7 @@ Apify.main(async () => {
 
                     const href = 'https://www.bloomingdales.com' + $(itemLinks[index]).attr('href');
 
-                    await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } },
-                        { forefront: true });
+                    await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } });
                     detailsEnqueued++;
                 }
 
@@ -159,8 +158,7 @@ Apify.main(async () => {
 
                     const href = 'https://www.bloomingdales.com' + $(itemLinks[index]).attr('href');
 
-                    await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } },
-                        { forefront: true });
+                    await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } });
                     detailsEnqueued++;                        
                 }
 
