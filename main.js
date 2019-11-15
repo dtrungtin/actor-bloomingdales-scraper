@@ -114,6 +114,7 @@ Apify.main(async () => {
 
                     await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } },
                         { forefront: true });
+                    detailsEnqueued++;
                 }
 
                 const arr = paginationEle.text().split('of');
@@ -160,6 +161,7 @@ Apify.main(async () => {
 
                     await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } },
                         { forefront: true });
+                    detailsEnqueued++;                        
                 }
 
                 const pageCount = request.userData.total;
