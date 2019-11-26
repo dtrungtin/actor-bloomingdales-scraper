@@ -36,11 +36,12 @@ function extractData(request, html, $) {
     // const price = $('.final-price').text().trim();
     const currency = $('.links-rail-currency').text().trim();
     const { product_original_price, product_price } = json.utagData;
-    const price = product_original_price[0];
-    const salePrice = product_price[0];
+    const price = parseFloat(product_original_price[0]);
+    const salePrice = parseFloat(product_price[0]);
 
     const source = 'www.bloomingdales.com';
     const brand = json.product.detail.brand.name;
+    const matertials = json.product.detail.brand.matertialsAndCare[0].split(';');
 
     const { images } = json.product.imagery;
     const imageList = [];
@@ -50,8 +51,6 @@ function extractData(request, html, $) {
             src: imageUrl + image.filePath,
         });
     }
-
-    const compositionList = [];
 
     const sizeMap = json.product.traits.sizes ? json.product.traits.sizes.sizeMap : {};
     const { colorMap } = json.product.traits.colors;
@@ -70,7 +69,7 @@ function extractData(request, html, $) {
             source,
             brand,
             images: imageList,
-            composition: compositionList,
+            composition: matertials,
             '#debug': Apify.utils.createRequestDebugInfo(request),
         };
 
