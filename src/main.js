@@ -3,6 +3,7 @@ const url = require('url');
 const safeEval = require('safe-eval');
 
 const { log } = Apify.utils;
+log.setLevel(log.LEVELS.DEBUG);
 
 function delay(time) {
     return new Promise(((resolve) => {
@@ -42,7 +43,7 @@ function extractData(request, $) {
     });
     const price = $('.final-price').text().trim();
 
-    return {
+    const result = {
         url: request.url,
         name,
         itemId,
@@ -51,6 +52,10 @@ function extractData(request, $) {
         price,
         '#debug': Apify.utils.createRequestDebugInfo(request),
     };
+
+    log.debug('Extract data: ', result);
+
+    return result;
 }
 
 let detailsEnqueued = 0;
