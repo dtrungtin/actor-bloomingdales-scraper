@@ -81,6 +81,7 @@ function extractData(request, html, $) {
                 const sizeObj = sizeMap[sizeId];
                 const sizeDisplayName = sizeObj.displayName;
                 sizes.push(sizeDisplayName);
+                availableSizes.push(sizeDisplayName);
             }
         }
 
