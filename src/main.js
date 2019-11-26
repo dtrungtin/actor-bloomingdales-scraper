@@ -153,7 +153,7 @@ Apify.main(async () => {
                 await requestQueue.addRequest({ url: startUrl, userData: { label: 'item' } });
                 detailsEnqueued++;
             } else if (startUrl.includes('/shop/')) {
-                await requestQueue.addRequest({ url: startUrl, userData: { label: 'category' } });
+                await requestQueue.addRequest({ url: startUrl, userData: { label: 'shop' } });
             } else {
                 await requestQueue.addRequest({ url: startUrl, userData: { label: 'home' } });
             }
@@ -177,7 +177,11 @@ Apify.main(async () => {
                     const href = `${WEBSITE}${$(allCategoryLinks[index]).attr('href')}`;
                     await requestQueue.addRequest({ url: href, userData: { label: 'category' } });
                 }
-            } else if (request.userData.label === 'category') {
+            } else if (request.userData.label === 'shop') {
+                // TODO: https://www.bloomingdales.com/shop/search/Fob/Handbags?keyword=alexander%20wang&cm_kws_ls=alexander%20wang&cm_sp=NAVIGATION-_-TOP_NAV-_-1080860-Featured-Designers-Alexander-Wang
+                if (request.url.includes('/search/')) {
+                    return;
+                }
                 // (1-96 of 727 Items)
                 const paginationEle = $('.page-range');
                 if (!paginationEle || paginationEle.text() === '') {
