@@ -50,8 +50,8 @@ function extractData(request, html, $) {
         });
     }
 
-    const { sizeMap } = json.product.trails.sizes;
-    const { colorMap } = json.product.trails.colors;
+    const { sizeMap } = json.product.traits.sizes;
+    const { colorMap } = json.product.traits.colors;
     const results = [];
 
     for (const colorObj of Object.values(colorMap)) {
