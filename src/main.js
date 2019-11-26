@@ -41,7 +41,7 @@ function extractData(request, html, $) {
 
     const source = 'www.bloomingdales.com';
     const brand = json.product.detail.brand.name;
-    const matertials = json.product.detail.brand.matertialsAndCare[0].split(';');
+    const matertials = json.product.detail.matertialsAndCare[0].split(';');
 
     const { images } = json.product.imagery;
     const imageList = [];
