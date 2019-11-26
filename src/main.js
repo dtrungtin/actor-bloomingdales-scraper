@@ -130,7 +130,7 @@ Apify.main(async () => {
         maxRequestRetries: 2,
         handlePageTimeoutSecs: 60,
 
-        handlePageFunction: async ({ request, html, $ }) => {
+        handlePageFunction: async ({ request, body, $ }) => {
             await delay(1000);
             log.info(`Processing ${request.url}...`);
 
@@ -218,7 +218,7 @@ Apify.main(async () => {
                         userData: { label: 'list', origin: originUrl, total: pageCount, params: paramsObj } });
                 }
             } else if (request.userData.label === 'item') {
-                let pageResult = extractData(request, html, $);
+                let pageResult = extractData(request, body, $);
 
                 if (extendOutputFunction) {
                     const userResult = await extendOutputFunctionObj($);
