@@ -50,7 +50,7 @@ function extractData(request, html, $) {
         });
     }
 
-    const { sizeMap } = json.product.traits.sizes;
+    const sizeMap = json.product.traits.sizes ? json.product.traits.sizes.sizeMap : {};
     const { colorMap } = json.product.traits.colors;
     const results = [];
 
