@@ -173,8 +173,8 @@ Apify.main(async () => {
             if (request.userData.label === 'home') {
                 const allCategoryLinks = $('.category-rail-subnav-item a');
 
-                for (const link of allCategoryLinks) {
-                    const href = `${WEBSITE}${link.attr('href')}`;
+                for (let index = 0; index < allCategoryLinks.length; index++) {
+                    const href = `${WEBSITE}${$(allCategoryLinks[index]).attr('href')}`;
                     await requestQueue.addRequest({ url: href, userData: { label: 'category' } });
                 }
             } else if (request.userData.label === 'category') {
