@@ -29,10 +29,13 @@ function objToStrMap(obj) {
 
 const isObject = val => typeof val === 'object' && val !== null && !Array.isArray(val);
 
-function extractData(request, $) {
+function extractData(request, html, $) {
     // <script data-bootstrap="page/product" type="application/json"></script>
     const scriptData = $('script[data-bootstrap="page/product"]').text();
     log.debug('Script data: ', scriptData);
+    if (scriptData === '') {
+        log.debug('Html: ', html);
+    }
     const json = JSON.parse(scriptData);
     const itemId = json.product.id;
     const name = $('.product-title h1').text().trim();
@@ -127,7 +130,7 @@ Apify.main(async () => {
         maxRequestRetries: 2,
         handlePageTimeoutSecs: 60,
 
-        handlePageFunction: async ({ request, $ }) => {
+        handlePageFunction: async ({ request, html, $ }) => {
             await delay(1000);
             log.info(`Processing ${request.url}...`);
 
@@ -215,7 +218,7 @@ Apify.main(async () => {
                         userData: { label: 'list', origin: originUrl, total: pageCount, params: paramsObj } });
                 }
             } else if (request.userData.label === 'item') {
-                let pageResult = extractData(request, $);
+                let pageResult = extractData(request, html, $);
 
                 if (extendOutputFunction) {
                     const userResult = await extendOutputFunctionObj($);
