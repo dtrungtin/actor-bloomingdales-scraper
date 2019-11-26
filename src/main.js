@@ -5,12 +5,6 @@ const safeEval = require('safe-eval');
 const { log } = Apify.utils;
 log.setLevel(log.LEVELS.DEBUG);
 
-function delay(time) {
-    return new Promise(((resolve) => {
-        setTimeout(resolve, time);
-    }));
-}
-
 function strMapToObj(strMap) {
     const obj = Object.create(null);
     for (const [k, v] of strMap) {
@@ -32,31 +26,62 @@ const isObject = val => typeof val === 'object' && val !== null && !Array.isArra
 function extractData(request, html, $) {
     // <script data-bootstrap="page/product" type="application/json"></script>
     const scriptData = $('script[data-bootstrap="page/product"]').text();
-    log.debug('Script data: ', scriptData);
     if (scriptData === '') {
         log.debug('Html: ', html);
     }
+
     const json = JSON.parse(scriptData);
     const itemId = json.product.id;
     const name = $('.product-title h1').text().trim();
-    const color = $('.color-display-name').text();
-    const sizes = [];
-    $('.size-dropdown').find('option').each((i, op) => {
-        if (i > 0) {
-            sizes.push($(op).text().trim());
-        }
-    });
-    const price = $('.final-price').text().trim();
+    // const price = $('.final-price').text().trim();
+    const currency = $('.links-rail-currency').text().trim();
+    const { product_original_price, product_price } = json.utagData;
+    const price = product_original_price[0];
+    const salePrice = product_price[0];
 
-    return {
-        url: request.url,
-        name,
-        itemId,
-        color,
-        sizes,
-        price,
-        '#debug': Apify.utils.createRequestDebugInfo(request),
-    };
+    const source = 'www.bloomingdales.com';
+    const brand = json.product.detail.brand.name;
+
+    const { images } = json.product.imagery;
+    const imageList = [];
+    for (const image of Object.values(images)) {
+        imageList.push({
+            src: image.filePath,
+        });
+    }
+
+    const { sizeMap } = json.product.trails.sizes;
+    const { colorMap } = json.product.trails.colors;
+    const results = [];
+
+    for (const colorObj of Object.values(colorMap)) {
+        const color = colorObj.name;
+        const result = {
+            url: request.url,
+            name,
+            itemId,
+            color,
+            price,
+            salePrice,
+            currency,
+            source,
+            brand,
+            images: imageList,
+            '#debug': Apify.utils.createRequestDebugInfo(request),
+        };
+
+        const sizes = [];
+        for (const sizeId of colorObj.sizes) {
+            const sizeObj = sizeMap[sizeId];
+            const sizeDisplayName = sizeObj.displayName;
+            sizes.push(sizeDisplayName);
+        }
+
+        result.sizes = sizes;
+        results.push(result);
+    }
+
+    return results;
 }
 
 let detailsEnqueued = 0;
@@ -91,6 +116,7 @@ Apify.main(async () => {
 
     let proxyConf = {
         useApifyProxy: true,
+        apifyProxyGroups: ['SHADER'],
     };
 
     if (proxyConfiguration) proxyConf = proxyConfiguration;
@@ -131,7 +157,6 @@ Apify.main(async () => {
         handlePageTimeoutSecs: 60,
 
         handlePageFunction: async ({ request, body, $ }) => {
-            await delay(1000);
             log.info(`Processing ${request.url}...`);
 
             if (request.userData.label === 'start') {
@@ -218,20 +243,24 @@ Apify.main(async () => {
                         userData: { label: 'list', origin: originUrl, total: pageCount, params: paramsObj } });
                 }
             } else if (request.userData.label === 'item') {
-                let pageResult = extractData(request, body, $);
+                const pageResults = extractData(request, body, $);
+                let userResult;
 
                 if (extendOutputFunction) {
-                    const userResult = await extendOutputFunctionObj($);
+                    userResult = await extendOutputFunctionObj($);
 
                     if (!isObject(userResult)) {
                         log.error('extendOutputFunction has to return an object!!!');
                         process.exit(1);
                     }
-
-                    pageResult = Object.assign(pageResult, userResult);
                 }
 
-                await Apify.pushData(pageResult);
+                for (let pageResult of pageResults) {
+                    if (userResult) {
+                        pageResult = Object.assign(pageResult, userResult);
+                    }
+                    await Apify.pushData(pageResult);
+                }
             }
         },
 
