@@ -152,8 +152,10 @@ Apify.main(async () => {
             if (startUrl.includes('/product/')) {
                 await requestQueue.addRequest({ url: startUrl, userData: { label: 'item' } });
                 detailsEnqueued++;
-            } else {
+            } else if (startUrl.includes('/shop/')) {
                 await requestQueue.addRequest({ url: startUrl, userData: { label: 'category' } });
+            } else {
+                await requestQueue.addRequest({ url: startUrl, userData: { label: 'home' } });
             }
         }
     }
