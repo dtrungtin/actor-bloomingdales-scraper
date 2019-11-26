@@ -71,10 +71,12 @@ function extractData(request, html, $) {
         };
 
         const sizes = [];
-        for (const sizeId of colorObj.sizes) {
-            const sizeObj = sizeMap[sizeId];
-            const sizeDisplayName = sizeObj.displayName;
-            sizes.push(sizeDisplayName);
+        if (colorObj.sizes) {
+            for (const sizeId of colorObj.sizes) {
+                const sizeObj = sizeMap[sizeId];
+                const sizeDisplayName = sizeObj.displayName;
+                sizes.push(sizeDisplayName);
+            }
         }
 
         result.sizes = sizes;
