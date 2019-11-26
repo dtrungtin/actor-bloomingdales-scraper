@@ -63,8 +63,7 @@ const WEBSITE = 'https://www.bloomingdales.com';
 
 Apify.main(async () => {
     const input = await Apify.getInput();
-    log.info('Input:');
-    log.dir(input);
+    log.info('Input:', input);
 
     const { startUrls, maxItems, extendOutputFunction, proxyConfiguration } = input;
 
