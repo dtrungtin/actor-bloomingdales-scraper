@@ -1,10 +1,8 @@
 const Apify = require('apify');
 const url = require('url');
-const _ = require('underscore');
 const safeEval = require('safe-eval');
 
 const { log } = Apify.utils;
-log.setLevel(log.LEVELS.WARNING);
 
 function delay(time) {
     return new Promise(((resolve) => {
@@ -13,22 +11,47 @@ function delay(time) {
 }
 
 function strMapToObj(strMap) {
-    let obj = Object.create(null);
-    for (let [k,v] of strMap) {
-      obj[k] = v;
+    const obj = Object.create(null);
+    for (const [k, v] of strMap) {
+        obj[k] = v;
     }
     return obj;
-  }
+}
 
 function objToStrMap(obj) {
-    let strMap = new Map();
-    for (let k of Object.keys(obj)) {
-      strMap.set(k, obj[k]);
+    const strMap = new Map();
+    for (const k of Object.keys(obj)) {
+        strMap.set(k, obj[k]);
     }
     return strMap;
 }
 
 const isObject = val => typeof val === 'object' && val !== null && !Array.isArray(val);
+
+function extractData(request, $) {
+    // <script data-bootstrap="page/product" type="application/json"></script>
+    const json = JSON.parse($('script[data-bootstrap="page/product"]').text());
+    const itemId = json.product.id;
+    const name = $('.product-title h1').text().trim();
+    const color = $('.color-display-name').text();
+    const sizes = [];
+    $('.size-dropdown').find('option').each((i, op) => {
+        if (i > 0) {
+            sizes.push($(op).text().trim());
+        }
+    });
+    const price = $('.final-price').text().trim();
+
+    return {
+        url: request.url,
+        name,
+        itemId,
+        color,
+        sizes,
+        price,
+        '#debug': Apify.utils.createRequestDebugInfo(request),
+    };
+}
 
 let detailsEnqueued = 0;
 
@@ -36,26 +59,36 @@ Apify.events.on('migrating', async () => {
     await Apify.setValue('detailsEnqueued', detailsEnqueued);
 });
 
+const WEBSITE = 'https://www.bloomingdales.com';
+
 Apify.main(async () => {
     const input = await Apify.getInput();
-    console.log('Input:');
-    console.dir(input);
+    log.info('Input:');
+    log.dir(input);
+
+    const { startUrls, maxItems, extendOutputFunction, proxyConfiguration } = input;
 
     if (!input || !Array.isArray(input.startUrls) || input.startUrls.length === 0) {
         throw new Error("Invalid input, it needs to contain at least one url in 'startUrls'.");
     }
 
-    let extendOutputFunction;
-    if (typeof input.extendOutputFunction === 'string' && input.extendOutputFunction.trim() !== '') {
+    let extendOutputFunctionObj;
+    if (typeof extendOutputFunction === 'string' && extendOutputFunction.trim() !== '') {
         try {
-            extendOutputFunction = safeEval(input.extendOutputFunction);
+            extendOutputFunctionObj = safeEval(extendOutputFunction);
         } catch (e) {
             throw new Error(`'extendOutputFunction' is not valid Javascript! Error: ${e}`);
         }
-        if (typeof extendOutputFunction !== 'function') {
+        if (typeof extendOutputFunctionObj !== 'function') {
             throw new Error('extendOutputFunction is not a function! Please fix it or use just default ouput!');
         }
     }
+
+    let proxyConf = {
+        useApifyProxy: true,
+    };
+
+    if (proxyConfiguration) proxyConf = proxyConfiguration;
 
     const requestQueue = await Apify.openRequestQueue();
 
@@ -65,17 +98,17 @@ Apify.main(async () => {
     }
 
     function checkLimit() {
-        return input.maxItems && detailsEnqueued >= input.maxItems;
+        return maxItems && detailsEnqueued >= maxItems;
     }
 
-    for (const item of input.startUrls) {
+    for (const item of startUrls) {
         const startUrl = item.url;
 
         if (checkLimit()) {
             break;
         }
 
-        if (startUrl.includes('https://www.bloomingdales.com/')) {
+        if (startUrl.includes(WEBSITE)) {
             if (startUrl.includes('/product/')) {
                 await requestQueue.addRequest({ url: startUrl, userData: { label: 'item' } });
                 detailsEnqueued++;
@@ -87,15 +120,14 @@ Apify.main(async () => {
 
     const crawler = new Apify.CheerioCrawler({
         requestQueue,
-
         minConcurrency: 10,
         maxConcurrency: 50,
-        maxRequestRetries: 1,
+        maxRequestRetries: 2,
         handlePageTimeoutSecs: 60,
 
         handlePageFunction: async ({ request, $ }) => {
             await delay(1000);
-            console.log(`Processing ${request.url}...`);
+            log.info(`Processing ${request.url}...`);
 
             if (request.userData.label === 'start') {
                 // (1-96 of 727 Items)
@@ -110,7 +142,7 @@ Apify.main(async () => {
                         break;
                     }
 
-                    const href = 'https://www.bloomingdales.com' + $(itemLinks[index]).attr('href');
+                    const href = `${WEBSITE}${$(itemLinks[index]).attr('href')}`;
 
                     await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } });
                     detailsEnqueued++;
@@ -122,7 +154,7 @@ Apify.main(async () => {
 
                 if (pageCount > 0) {
                     const nextIndex = 2;
-                    const {protocol, host, pathname, search} = url.parse(request.url);
+                    const { protocol, host, pathname, search } = url.parse(request.url);
 
                     // Ex: /shop/jewelry-accessories/designer-bracelets/Bracelets_type,Pageindex/Bangle,2
                     const parts = pathname.split('/');
@@ -132,7 +164,7 @@ Apify.main(async () => {
                     if (parts.length > 4) {
                         const paramNames = parts[4].split(',');
                         const paramValues = parts[5].split(',');
-                        
+
                         for (let index = 0; index < paramNames.length; index++) {
                             const pName = paramNames[index];
                             const pValue = paramValues[index];
@@ -147,7 +179,8 @@ Apify.main(async () => {
                     const startUrl = `${originUrl}/${keys}/${values}${search}`;
                     const paramsObj = strMapToObj(params);
 
-                    await requestQueue.addRequest({ url: startUrl, userData: { label: 'list', origin: originUrl, total: pageCount + 1, params: paramsObj } });
+                    await requestQueue.addRequest({ url: startUrl,
+                        userData: { label: 'list', origin: originUrl, total: pageCount + 1, params: paramsObj } });
                 }
             } else if (request.userData.label === 'list') {
                 const itemLinks = $('a.productDescLink');
@@ -156,10 +189,10 @@ Apify.main(async () => {
                         break;
                     }
 
-                    const href = 'https://www.bloomingdales.com' + $(itemLinks[index]).attr('href');
+                    const href = `${WEBSITE}${$(itemLinks[index]).attr('href')}`;
 
                     await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } });
-                    detailsEnqueued++;                        
+                    detailsEnqueued++;
                 }
 
                 const pageCount = request.userData.total;
@@ -173,44 +206,24 @@ Apify.main(async () => {
                 const paramsObj = strMapToObj(params);
 
                 if (index < pageCount) {
-                    const {search} = url.parse(request.url);
+                    const { search } = url.parse(request.url);
                     const startUrl = `${originUrl}/${keys}/${values}${search}`;
 
-                    await requestQueue.addRequest({ url: startUrl, userData: { label: 'list', origin: originUrl, total: pageCount, params: paramsObj } });
+                    await requestQueue.addRequest({ url: startUrl,
+                        userData: { label: 'list', origin: originUrl, total: pageCount, params: paramsObj } });
                 }
             } else if (request.userData.label === 'item') {
-                // <script data-bootstrap="page/product" type="application/json"></script>
-                const json = JSON.parse($('script[data-bootstrap="page/product"]').text());
-                const itemId = json.product.id;
-                const name = $('.product-title h1').text().trim();
-                const color = $('.color-display-name').text();
-                const sizes = [];
-                $('.size-dropdown').find('option').each((i,op) => {
-                    if (i > 0) {
-                        sizes.push($(op).text().trim());
-                    }
-                });
-                const price = $('.final-price').text().trim();
-
-                const pageResult = {
-                    url: request.url,
-                    name,
-                    itemId,
-                    color,
-                    sizes,
-                    price,
-                    '#debug': Apify.utils.createRequestDebugInfo(request),
-                };
+                let pageResult = extractData(request, $);
 
                 if (extendOutputFunction) {
-                    const userResult = await extendOutputFunction($);
+                    const userResult = await extendOutputFunctionObj($);
 
                     if (!isObject(userResult)) {
-                        console.log('extendOutputFunction has to return an object!!!');
+                        log.error('extendOutputFunction has to return an object!!!');
                         process.exit(1);
                     }
 
-                    _.extend(pageResult, userResult);
+                    pageResult = Object.assign(pageResult, userResult);
                 }
 
                 await Apify.pushData(pageResult);
@@ -219,14 +232,14 @@ Apify.main(async () => {
 
         // This function is called if the page processing failed more than maxRequestRetries+1 times.
         handleFailedRequestFunction: async ({ request }) => {
-            console.log(`Request ${request.url} failed twice.`);
+            log.info(`Request ${request.url} failed twice.`);
         },
 
-        ...input.proxyConfiguration,
+        ...proxyConf,
     });
 
     // Run the crawler and wait for it to finish.
     await crawler.run();
 
-    console.log('Crawler finished.');
+    log.info('Crawler finished.');
 });
