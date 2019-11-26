@@ -153,7 +153,7 @@ Apify.main(async () => {
                 await requestQueue.addRequest({ url: startUrl, userData: { label: 'item' } });
                 detailsEnqueued++;
             } else {
-                await requestQueue.addRequest({ url: startUrl, userData: { label: 'start' } });
+                await requestQueue.addRequest({ url: startUrl, userData: { label: 'category' } });
             }
         }
     }
@@ -168,7 +168,14 @@ Apify.main(async () => {
         handlePageFunction: async ({ request, body, $ }) => {
             log.info(`Processing ${request.url}...`);
 
-            if (request.userData.label === 'start') {
+            if (request.userData.label === 'home') {
+                const allCategoryLinks = $('.category-rail-subnav-item a');
+
+                for (const link of allCategoryLinks) {
+                    const href = `${WEBSITE}${link.attr('href')}`;
+                    await requestQueue.addRequest({ url: href, userData: { label: 'category' } });
+                }
+            } else if (request.userData.label === 'category') {
                 // (1-96 of 727 Items)
                 const paginationEle = $('.page-range');
                 if (!paginationEle || paginationEle.text() === '') {
