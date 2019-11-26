@@ -171,7 +171,7 @@ Apify.main(async () => {
             log.info(`Processing ${request.url}...`);
 
             if (request.userData.label === 'home') {
-                const allCategoryLinks = $('.category-rail-subnav-item a');
+                const allCategoryLinks = $('a.leftnav-item-link');
 
                 for (let index = 0; index < allCategoryLinks.length; index++) {
                     const href = `${WEBSITE}${$(allCategoryLinks[index]).attr('href')}`;
