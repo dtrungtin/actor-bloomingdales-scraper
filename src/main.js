@@ -31,7 +31,9 @@ const isObject = val => typeof val === 'object' && val !== null && !Array.isArra
 
 function extractData(request, $) {
     // <script data-bootstrap="page/product" type="application/json"></script>
-    const json = JSON.parse($('script[data-bootstrap="page/product"]').text());
+    const scriptData = $('script[data-bootstrap="page/product"]').text();
+    log.debug('Script data: ', scriptData);
+    const json = JSON.parse(scriptData);
     const itemId = json.product.id;
     const name = $('.product-title h1').text().trim();
     const color = $('.color-display-name').text();
@@ -43,7 +45,7 @@ function extractData(request, $) {
     });
     const price = $('.final-price').text().trim();
 
-    const result = {
+    return {
         url: request.url,
         name,
         itemId,
@@ -52,10 +54,6 @@ function extractData(request, $) {
         price,
         '#debug': Apify.utils.createRequestDebugInfo(request),
     };
-
-    log.debug('Extract data: ', result);
-
-    return result;
 }
 
 let detailsEnqueued = 0;
