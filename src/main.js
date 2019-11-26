@@ -44,11 +44,14 @@ function extractData(request, html, $) {
 
     const { images } = json.product.imagery;
     const imageList = [];
+    const imageUrl = json.product.urlTemplate.product;
     for (const image of Object.values(images)) {
         imageList.push({
-            src: image.filePath,
+            src: imageUrl + image.filePath,
         });
     }
+
+    const compositionList = [];
 
     const sizeMap = json.product.traits.sizes ? json.product.traits.sizes.sizeMap : {};
     const { colorMap } = json.product.traits.colors;
@@ -67,10 +70,12 @@ function extractData(request, html, $) {
             source,
             brand,
             images: imageList,
+            composition: compositionList,
             '#debug': Apify.utils.createRequestDebugInfo(request),
         };
 
         const sizes = [];
+        const availableSizes = [];
         if (colorObj.sizes) {
             for (const sizeId of colorObj.sizes) {
                 const sizeObj = sizeMap[sizeId];
@@ -80,6 +85,7 @@ function extractData(request, html, $) {
         }
 
         result.sizes = sizes;
+        result.availableSizes = availableSizes;
         results.push(result);
     }
 
