@@ -1,5 +1,6 @@
 const Apify = require('apify');
 const url = require('url');
+const querystring = require('querystring');
 const safeEval = require('safe-eval');
 
 const { log } = Apify.utils;
@@ -37,7 +38,8 @@ function extractData(request, html, $) {
     }
 
     const json = JSON.parse(scriptData);
-    const itemId = json.product.id;
+    const params = querystring.parse(request.url.split('?')[1]);
+    const itemId = params.ID;
     const name = $('.product-title h1').text().trim();
     const currency = $('.links-rail-currency').text().trim();
     // eslint-disable-next-line camelcase
