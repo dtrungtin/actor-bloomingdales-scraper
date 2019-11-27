@@ -33,8 +33,8 @@ function extractData(request, html, $) {
     const json = JSON.parse(scriptData);
     const itemId = json.product.id;
     const name = $('.product-title h1').text().trim();
-    // const price = $('.final-price').text().trim();
     const currency = $('.links-rail-currency').text().trim();
+    // eslint-disable-next-line camelcase
     const { product_original_price, product_price } = json.utagData;
     const price = parseFloat(product_original_price[0]);
     const salePrice = parseFloat(product_price[0]);
@@ -150,7 +150,7 @@ Apify.main(async () => {
 
         if (startUrl.includes(WEBSITE)) {
             if (startUrl.includes('/product/')) {
-                await requestQueue.addRequest({ url: startUrl, userData: { label: 'item' } });
+                await requestQueue.addRequest({ url: startUrl, userData: { label: 'item' } }, { forefront: true });
                 detailsEnqueued++;
             } else if (startUrl.includes('/shop/')) {
                 await requestQueue.addRequest({ url: startUrl, userData: { label: 'shop' } });
@@ -171,17 +171,21 @@ Apify.main(async () => {
             log.info(`Processing ${request.url}...`);
 
             if (request.userData.label === 'home') {
+                if (checkLimit()) {
+                    return;
+                }
+
                 const allCategoryLinks = $('a.leftnav-item-link');
 
                 for (let index = 0; index < allCategoryLinks.length; index++) {
                     const href = `${WEBSITE}${$(allCategoryLinks[index]).attr('href')}`;
-                    await requestQueue.addRequest({ url: href, userData: { label: 'category' } });
+                    await requestQueue.addRequest({ url: href, userData: { label: 'shop' } });
                 }
             } else if (request.userData.label === 'shop') {
-                // TODO: https://www.bloomingdales.com/shop/search/Fob/Handbags?keyword=alexander%20wang&cm_kws_ls=alexander%20wang&cm_sp=NAVIGATION-_-TOP_NAV-_-1080860-Featured-Designers-Alexander-Wang
-                if (request.url.includes('/search/')) {
+                if (checkLimit()) {
                     return;
                 }
+
                 // (1-96 of 727 Items)
                 const paginationEle = $('.page-range');
                 if (!paginationEle || paginationEle.text() === '') {
@@ -196,8 +200,12 @@ Apify.main(async () => {
 
                     const href = `${WEBSITE}${$(itemLinks[index]).attr('href')}`;
 
-                    await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } });
+                    await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } }, { forefront: true });
                     detailsEnqueued++;
+                }
+
+                if (checkLimit()) {
+                    return;
                 }
 
                 const arr = paginationEle.text().split('of');
@@ -207,20 +215,35 @@ Apify.main(async () => {
                 if (pageCount > 0) {
                     const nextIndex = 2;
                     const { protocol, host, pathname, search } = url.parse(request.url);
-
-                    // Ex: /shop/jewelry-accessories/designer-bracelets/Bracelets_type,Pageindex/Bangle,2
                     const parts = pathname.split('/');
-                    const originalPathname = parts.slice(0, 4).join('/');
+                    let originalPathname = '';
                     const params = new Map();
 
-                    if (parts.length > 4) {
-                        const paramNames = parts[4].split(',');
-                        const paramValues = parts[5].split(',');
-
-                        for (let index = 0; index < paramNames.length; index++) {
-                            const pName = paramNames[index];
-                            const pValue = paramValues[index];
-                            params.set(pName, pValue);
+                    // Ex: /shop/search/Pageindex/2?keyword=shirt
+                    if (request.url.includes('/search/')) {
+                        originalPathname = parts.slice(0, 3).join('/');
+                        if (parts.length > 3) {
+                            const paramNames = parts[3].split(',');
+                            const paramValues = parts[4].split(',');
+    
+                            for (let index = 0; index < paramNames.length; index++) {
+                                const pName = paramNames[index];
+                                const pValue = paramValues[index];
+                                params.set(pName, pValue);
+                            }
+                        }
+                    // Ex: /shop/jewelry-accessories/designer-bracelets/Bracelets_type,Pageindex/Bangle,2
+                    } else {
+                        originalPathname = parts.slice(0, 4).join('/');
+                        if (parts.length > 4) {
+                            const paramNames = parts[4].split(',');
+                            const paramValues = parts[5].split(',');
+    
+                            for (let index = 0; index < paramNames.length; index++) {
+                                const pName = paramNames[index];
+                                const pValue = paramValues[index];
+                                params.set(pName, pValue);
+                            }
                         }
                     }
 
@@ -235,6 +258,10 @@ Apify.main(async () => {
                         userData: { label: 'list', origin: originUrl, total: pageCount + 1, params: paramsObj } });
                 }
             } else if (request.userData.label === 'list') {
+                if (checkLimit()) {
+                    return;
+                }
+
                 const itemLinks = $('a.productDescLink');
                 for (let index = 0; index < itemLinks.length; index++) {
                     if (checkLimit()) {
@@ -243,8 +270,12 @@ Apify.main(async () => {
 
                     const href = `${WEBSITE}${$(itemLinks[index]).attr('href')}`;
 
-                    await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } });
+                    await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } }, { forefront: true });
                     detailsEnqueued++;
+                }
+
+                if (checkLimit()) {
+                    return;
                 }
 
                 const pageCount = request.userData.total;
