@@ -5,6 +5,12 @@ const safeEval = require('safe-eval');
 const { log } = Apify.utils;
 log.setLevel(log.LEVELS.DEBUG);
 
+function delay(time) {
+    return new Promise(((resolve) => {
+        setTimeout(resolve, time);
+    }));
+}
+
 function strMapToObj(strMap) {
     const obj = Object.create(null);
     for (const [k, v] of strMap) {
@@ -178,8 +184,13 @@ Apify.main(async () => {
                 const allCategoryLinks = $('a.leftnav-item-link');
 
                 for (let index = 0; index < allCategoryLinks.length; index++) {
+                    if (checkLimit()) {
+                        return;
+                    }
+
                     const href = `${WEBSITE}${$(allCategoryLinks[index]).attr('href')}`;
                     await requestQueue.addRequest({ url: href, userData: { label: 'shop' } });
+                    await delay(5000);
                 }
             } else if (request.userData.label === 'shop') {
                 if (checkLimit()) {
@@ -225,7 +236,7 @@ Apify.main(async () => {
                         if (parts.length > 3) {
                             const paramNames = parts[3].split(',');
                             const paramValues = parts[4].split(',');
-    
+
                             for (let index = 0; index < paramNames.length; index++) {
                                 const pName = paramNames[index];
                                 const pValue = paramValues[index];
@@ -238,7 +249,7 @@ Apify.main(async () => {
                         if (parts.length > 4) {
                             const paramNames = parts[4].split(',');
                             const paramValues = parts[5].split(',');
-    
+
                             for (let index = 0; index < paramNames.length; index++) {
                                 const pName = paramNames[index];
                                 const pValue = paramValues[index];
