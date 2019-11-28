@@ -40,7 +40,7 @@ function extractData(request, html, $) {
     const json = JSON.parse(scriptData);
     const params = querystring.parse(request.url.split('?')[1]);
     const itemId = params.ID;
-    const title = $('.product-title h1').text().trim();
+    const { title, description } = json.product.detail;
     const currency = $('.links-rail-currency').text().trim();
     // eslint-disable-next-line camelcase
     const { product_original_price, product_price } = json.utagData;
@@ -76,6 +76,7 @@ function extractData(request, html, $) {
             categories: categoryList,
             scrapedAt: now.toISOString(),
             title,
+            description,
             designer: null,
             itemId,
             color,
