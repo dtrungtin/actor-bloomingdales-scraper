@@ -245,7 +245,7 @@ Apify.main(async () => {
 
                 const arr = paginationEle.text().split('of');
                 const perPage = arr[0].trim().split('-')[1];
-                const pageCount = Math.floor(parseInt(arr[1].trim().split(' ')[0], 10) / perPage);
+                const pageCount = Math.floor(parseInt(arr[1].trim().split(' ')[0].split(',').join(''), 10) / perPage);
 
                 if (pageCount > 0) {
                     const nextIndex = 2;
