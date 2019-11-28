@@ -165,8 +165,11 @@ Apify.main(async () => {
 
         if (startUrl.includes(WEBSITE)) {
             if (startUrl.includes('/product/')) {
-                await requestQueue.addRequest({ url: startUrl, userData: { label: 'item' } }, { forefront: true });
-                detailsEnqueued++;
+                const { wasAlreadyPresent, wasAlreadyHandled } = await
+                requestQueue.addRequest({ url: startUrl, userData: { label: 'item' } }, { forefront: true });
+                if (!wasAlreadyPresent && !wasAlreadyHandled) {
+                    detailsEnqueued++;
+                }
             } else if (startUrl.includes('/shop/')) {
                 await requestQueue.addRequest({ url: startUrl, userData: { label: 'shop' } });
             } else {
@@ -220,8 +223,11 @@ Apify.main(async () => {
 
                     const href = `${WEBSITE}${$(itemLinks[index]).attr('href')}`;
 
-                    await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } }, { forefront: true });
-                    detailsEnqueued++;
+                    const { wasAlreadyPresent, wasAlreadyHandled } = await
+                    requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } }, { forefront: true });
+                    if (!wasAlreadyPresent && !wasAlreadyHandled) {
+                        detailsEnqueued++;
+                    }
                 }
 
                 if (checkLimit()) {
@@ -290,8 +296,11 @@ Apify.main(async () => {
 
                     const href = `${WEBSITE}${$(itemLinks[index]).attr('href')}`;
 
-                    await requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } }, { forefront: true });
-                    detailsEnqueued++;
+                    const { wasAlreadyPresent, wasAlreadyHandled } = await
+                    requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } }, { forefront: true });
+                    if (!wasAlreadyPresent && !wasAlreadyHandled) {
+                        detailsEnqueued++;
+                    }
                 }
 
                 if (checkLimit()) {
