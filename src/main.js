@@ -165,8 +165,12 @@ Apify.main(async () => {
 
         if (startUrl.includes(WEBSITE)) {
             if (startUrl.includes('/product/')) {
-                const { wasAlreadyPresent, wasAlreadyHandled } = await
-                requestQueue.addRequest({ url: startUrl, userData: { label: 'item' } }, { forefront: true });
+                const params = querystring.parse(startUrl.split('?')[1]);
+                const itemId = params.ID;
+                const { wasAlreadyPresent, wasAlreadyHandled } = await requestQueue.addRequest(
+                    { url: startUrl, uniqueKey: itemId, userData: { label: 'item' } },
+                    { forefront: true },
+                );
                 if (!wasAlreadyPresent && !wasAlreadyHandled) {
                     detailsEnqueued++;
                 }
@@ -222,9 +226,13 @@ Apify.main(async () => {
                     }
 
                     const href = `${WEBSITE}${$(itemLinks[index]).attr('href')}`;
+                    const params = querystring.parse(href.split('?')[1]);
+                    const itemId = params.ID;
 
-                    const { wasAlreadyPresent, wasAlreadyHandled } = await
-                    requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } }, { forefront: true });
+                    const { wasAlreadyPresent, wasAlreadyHandled } = await requestQueue.addRequest(
+                        { url: `${href}`, uniqueKey: itemId, userData: { label: 'item' } },
+                        { forefront: true },
+                    );
                     if (!wasAlreadyPresent && !wasAlreadyHandled) {
                         detailsEnqueued++;
                     }
@@ -236,7 +244,7 @@ Apify.main(async () => {
 
                 const arr = paginationEle.text().split('of');
                 const perPage = arr[0].trim().split('-')[1];
-                const pageCount = Math.floor(parseInt(arr[1].trim().split(' ')[0], 10) / perPage); // Each page has 96 items
+                const pageCount = Math.floor(parseInt(arr[1].trim().split(' ')[0], 10) / perPage);
 
                 if (pageCount > 0) {
                     const nextIndex = 2;
@@ -245,7 +253,7 @@ Apify.main(async () => {
                     let originalPathname = '';
                     const params = new Map();
 
-                    // Ex: /shop/search/Pageindex/2?keyword=shirt
+                    // "/shop/search/Pageindex/2?keyword=shirt"
                     if (request.url.includes('/search/')) {
                         originalPathname = parts.slice(0, 3).join('/');
                         if (parts.length > 3) {
@@ -258,7 +266,7 @@ Apify.main(async () => {
                                 params.set(pName, pValue);
                             }
                         }
-                    // Ex: /shop/jewelry-accessories/designer-bracelets/Bracelets_type,Pageindex/Bangle,2
+                    // "/shop/jewelry-accessories/designer-bracelets/Bracelets_type,Pageindex/Bangle,2"
                     } else {
                         originalPathname = parts.slice(0, 4).join('/');
                         if (parts.length > 4) {
@@ -295,9 +303,12 @@ Apify.main(async () => {
                     }
 
                     const href = `${WEBSITE}${$(itemLinks[index]).attr('href')}`;
+                    const params = querystring.parse(href.split('?')[1]);
+                    const itemId = params.ID;
 
-                    const { wasAlreadyPresent, wasAlreadyHandled } = await
-                    requestQueue.addRequest({ url: `${href}`, userData: { label: 'item' } }, { forefront: true });
+                    const { wasAlreadyPresent, wasAlreadyHandled } = await requestQueue.addRequest(
+                        { url: `${href}`, uniqueKey: itemId, userData: { label: 'item' } }, { forefront: true },
+                    );
                     if (!wasAlreadyPresent && !wasAlreadyHandled) {
                         detailsEnqueued++;
                     }
