@@ -40,7 +40,7 @@ function extractData(request, html, $) {
     const json = JSON.parse(scriptData);
     const params = querystring.parse(request.url.split('?')[1]);
     const itemId = params.ID;
-    const name = $('.product-title h1').text().trim();
+    const title = $('.product-title h1').text().trim();
     const currency = $('.links-rail-currency').text().trim();
     // eslint-disable-next-line camelcase
     const { product_original_price, product_price } = json.utagData;
@@ -52,24 +52,31 @@ function extractData(request, html, $) {
     const matertials = json.product.detail.materialsAndCare ? json.product.detail.materialsAndCare[0].split(';')
         .map(Function.prototype.call, String.prototype.trim) : [];
 
-    const { images } = json.product.imagery;
-    const imageList = [];
-    const imageUrl = json.product.urlTemplate.product;
-    for (const image of Object.values(images)) {
-        imageList.push({
-            src: imageUrl + image.filePath,
-        });
-    }
-
     const sizeMap = json.product.traits.sizes ? json.product.traits.sizes.sizeMap : {};
     const { colorMap } = json.product.traits.colors;
     const results = [];
+    const now = new Date();
+
+    const { categories } = json.product.relationships.taxonomy;
+    const categoryList = categories.slice(1).map(cat => cat.name.trim());
 
     for (const colorObj of Object.values(colorMap)) {
         const color = colorObj.name;
+        const { images } = colorObj.imagery;
+        const imageList = [];
+        const imageUrl = json.product.urlTemplate.product;
+        for (const image of Object.values(images)) {
+            imageList.push({
+                src: imageUrl + image.filePath,
+            });
+        }
+
         const result = {
             url: request.url,
-            name,
+            categories: categoryList,
+            scrapedAt: now.toISOString(),
+            title,
+            designer: null,
             itemId,
             color,
             price,
