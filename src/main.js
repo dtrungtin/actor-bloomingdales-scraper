@@ -57,13 +57,17 @@ Apify.main(async () => {
     }
 
     for (const item of startUrls) {
-        const startUrl = item.url;
+        let startUrl = item.url;
 
         if (checkLimit()) {
             break;
         }
 
         if (startUrl.includes('bloomingdales.com')) {
+            if (!startUrl.includes('www.bloomingdales.com')) {
+                startUrl = startUrl.replace('bloomingdales.com', 'www.bloomingdales.com');
+            }
+
             if (startUrl.includes('/product/')) {
                 const params = querystring.parse(startUrl.split('?')[1]);
                 const itemId = params.ID;
