@@ -12,7 +12,10 @@ function extractData(request, html, $) {
     const params = querystring.parse(request.url.split('?')[1]);
     const itemId = params.ID;
     const { title, description, bulletText } = json.product.detail;
-    let fullDescription = description + ' ' + bulletText.map(Function.prototype.call, String.prototype.trim).join('. ');
+    let fullDescription = description;
+    if (bulletText) {
+        fullDescription += ' ' + bulletText.map(Function.prototype.call, String.prototype.trim).join('. ');
+    }
     const currency = $('.links-rail-currency').text().trim();
     // eslint-disable-next-line camelcase
     const { product_original_price, product_price } = json.utagData;
