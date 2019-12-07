@@ -3,111 +3,10 @@ const url = require('url');
 const querystring = require('querystring');
 const safeEval = require('safe-eval');
 
+const { extractData } = require('./extract');
+const { delay, strMapToObj, objToStrMap, isObject } = require('./utils');
 const { log } = Apify.utils;
 log.setLevel(log.LEVELS.DEBUG);
-
-function delay(time) {
-    return new Promise(((resolve) => {
-        setTimeout(resolve, time);
-    }));
-}
-
-function strMapToObj(strMap) {
-    const obj = Object.create(null);
-    for (const [k, v] of strMap) {
-        obj[k] = v;
-    }
-    return obj;
-}
-
-function objToStrMap(obj) {
-    const strMap = new Map();
-    for (const k of Object.keys(obj)) {
-        strMap.set(k, obj[k]);
-    }
-    return strMap;
-}
-
-const isObject = val => typeof val === 'object' && val !== null && !Array.isArray(val);
-
-function extractData(request, html, $) {
-    // <script data-bootstrap="page/product" type="application/json"></script>
-    const scriptData = $('script[data-bootstrap="page/product"]').text();
-    if (scriptData === '') {
-        log.debug('Html: ', html);
-    }
-
-    const json = JSON.parse(scriptData);
-    const params = querystring.parse(request.url.split('?')[1]);
-    const itemId = params.ID;
-    const { title, description } = json.product.detail;
-    const currency = $('.links-rail-currency').text().trim();
-    // eslint-disable-next-line camelcase
-    const { product_original_price, product_price } = json.utagData;
-    const price = parseFloat(product_original_price[0]);
-    const salePrice = parseFloat(product_price[0]);
-
-    const source = 'www.bloomingdales.com';
-    const brand = json.product.detail.brand.name;
-    const matertials = json.product.detail.materialsAndCare ? json.product.detail.materialsAndCare[0].split(';')
-        .map(Function.prototype.call, String.prototype.trim) : [];
-
-    const sizeMap = json.product.traits.sizes ? json.product.traits.sizes.sizeMap : {};
-    const { colorMap } = json.product.traits.colors;
-    const results = [];
-    const now = new Date();
-
-    const { categories } = json.product.relationships.taxonomy;
-    const categoryList = categories ? categories.filter(cat => !!cat.id).map(cat => cat.name.trim()) : [];
-
-    for (const colorObj of Object.values(colorMap)) {
-        const color = colorObj.name;
-        const { images } = colorObj.imagery;
-        const imageList = [];
-        const imageUrl = json.product.urlTemplate.product;
-        for (const image of Object.values(images)) {
-            imageList.push({
-                src: imageUrl + image.filePath,
-            });
-        }
-
-        const result = {
-            url: request.url,
-            categories: categoryList,
-            scrapedAt: now.toISOString(),
-            title,
-            description,
-            designer: null,
-            itemId,
-            color,
-            price,
-            salePrice,
-            currency,
-            source,
-            brand,
-            images: imageList,
-            composition: matertials,
-            '#debug': Apify.utils.createRequestDebugInfo(request),
-        };
-
-        const sizes = [];
-        const availableSizes = [];
-        if (colorObj.sizes) {
-            for (const sizeId of colorObj.sizes) {
-                const sizeObj = sizeMap[sizeId];
-                const sizeDisplayName = sizeObj.displayName;
-                sizes.push(sizeDisplayName);
-                availableSizes.push(sizeDisplayName);
-            }
-        }
-
-        result.sizes = sizes;
-        result.availableSizes = availableSizes;
-        results.push(result);
-    }
-
-    return results;
-}
 
 let detailsEnqueued = 0;
 
@@ -164,7 +63,7 @@ Apify.main(async () => {
             break;
         }
 
-        if (startUrl.includes(WEBSITE)) {
+        if (startUrl.includes('bloomingdales.com')) {
             if (startUrl.includes('/product/')) {
                 const params = querystring.parse(startUrl.split('?')[1]);
                 const itemId = params.ID;
@@ -176,7 +75,14 @@ Apify.main(async () => {
                     detailsEnqueued++;
                 }
             } else if (startUrl.includes('/shop/')) {
-                await requestQueue.addRequest({ url: startUrl, userData: { label: 'shop' } });
+                const { pathname } = url.parse(startUrl);
+                const parts = pathname.split('/');
+
+                if (parts.length === 3 && !startUrl.includes('/search/')) {
+                    await requestQueue.addRequest({ url: startUrl, userData: { label: 'topshop' } });
+                } else {
+                    await requestQueue.addRequest({ url: startUrl, userData: { label: 'shop' } });
+                }
             } else {
                 await requestQueue.addRequest({ url: startUrl, userData: { label: 'home' } });
             }
@@ -206,9 +112,32 @@ Apify.main(async () => {
                     }
 
                     const href = `${WEBSITE}${$(allCategoryLinks[index]).attr('href')}`;
+                    const { pathname } = url.parse(href);
+                    const parts = pathname.split('/');
+                    
+                    if (parts.length === 3) {
+                        await requestQueue.addRequest({ url: href, userData: { label: 'topshop' } });
+                    } else {
+                        await requestQueue.addRequest({ url: href, userData: { label: 'shop' } });
+                    }
+                    await delay(5000);
+                }
+            } else if (request.userData.label === 'topshop') {
+                if (checkLimit()) {
+                    return;
+                }
+
+                const categoryLinks = $('.adCatIcon a');
+                for (let index = 0; index < categoryLinks.length; index++) {
+                    if (checkLimit()) {
+                        break;
+                    }
+
+                    const href = `${WEBSITE}${$(categoryLinks[index]).attr('href')}`;
                     await requestQueue.addRequest({ url: href, userData: { label: 'shop' } });
                     await delay(5000);
                 }
+
             } else if (request.userData.label === 'shop') {
                 if (checkLimit()) {
                     return;
