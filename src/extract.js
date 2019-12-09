@@ -4,17 +4,13 @@ const querystring = require('querystring');
 function extractData(request, html, $) {
     // <script data-bootstrap="page/product" type="application/json"></script>
     const scriptData = $('script[data-bootstrap="page/product"]').text();
-    if (scriptData === '') {
-        log.debug('Html: ', html);
-    }
-
     const json = JSON.parse(scriptData);
     const params = querystring.parse(request.url.split('?')[1]);
     const itemId = params.ID;
     const { title, description, bulletText } = json.product.detail;
     let fullDescription = description;
     if (bulletText) {
-        fullDescription += ' ' + bulletText.map(Function.prototype.call, String.prototype.trim).join('. ');
+        fullDescription += ` ${bulletText.map(Function.prototype.call, String.prototype.trim).join('. ')}`;
     }
     const currency = $('.links-rail-currency').text().trim();
     // eslint-disable-next-line camelcase
