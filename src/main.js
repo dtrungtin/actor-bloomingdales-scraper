@@ -103,6 +103,10 @@ Apify.main(async () => {
         handlePageFunction: async ({ request, body, $ }) => {
             log.info(`Processing ${request.url}...`);
 
+            if (body.includes('Access Denied')) {
+                throw new Error('We got blocked, to ensure stable run, use only SHADER proxy group');
+            }
+
             if (request.userData.label === 'home') {
                 if (checkLimit()) {
                     return;
