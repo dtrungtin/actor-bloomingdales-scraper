@@ -111,7 +111,7 @@ Apify.main(async () => {
             log.info(`Processing ${request.url}...`);
 
             if (body.includes('Access Denied')) {
-                throw new Error('We got blocked, to ensure stable run, use only SHADER proxy group');
+                throw new Error('We got blocked, to ensure stable run, please use SHADER or RESIDENTIAL proxy group');
             }
 
             if (request.userData.label === 'home') {
