@@ -26,12 +26,12 @@
             "prefill": "($) => { return {} }",
             "editor": "javascript"
         },
-        "proxyConfiguration": {
+        "proxyConfig": {
             "title": "Proxy configuration",
             "type": "object",
             "editor": "proxy",
-            "description": "The best option is usually Automatic proxy. But you can also use your own proxies or no proxy",
-            "prefill": { "useApifyProxy": true, "apifyProxyGroups": ["SHADER"] }
+            "description": "The best option is usually Automatic proxy. But you can also use your own proxies",
+            "prefill": { "useApifyProxy": true }
         }
     }
 }

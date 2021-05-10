@@ -5,6 +5,7 @@ const safeEval = require('safe-eval');
 
 const { extractData } = require('./extract');
 const { delay, strMapToObj, objToStrMap, isObject } = require('./utils');
+
 const { log } = Apify.utils;
 log.setLevel(log.LEVELS.DEBUG);
 
@@ -20,7 +21,7 @@ Apify.main(async () => {
     const input = await Apify.getInput();
     log.info('Input:', input);
 
-    const { startUrls, maxItems, extendOutputFunction, proxyConfiguration } = input;
+    const { startUrls, maxItems, extendOutputFunction, proxyConfig } = input;
 
     if (!input || !Array.isArray(startUrls) || startUrls.length === 0) {
         throw new Error("Invalid input, it needs to contain at least one url in 'startUrls'.");
@@ -38,12 +39,16 @@ Apify.main(async () => {
         }
     }
 
-    let proxyConf = {
+    const defaultProxyConfig = {
         useApifyProxy: true,
-        apifyProxyGroups: ['SHADER'],
     };
 
-    if (proxyConfiguration) proxyConf = proxyConfiguration;
+    const proxyConfiguration = await Apify.createProxyConfiguration(proxyConfig || defaultProxyConfig);
+
+    if (!proxyConfiguration || (!proxyConfiguration.usesApifyProxy && (!proxyConfiguration.proxyUrls
+        || !proxyConfiguration.proxyUrls.length)) || !proxyConfiguration.newUrl()) {
+        throw new Error('\n=======\nYou must use Apify proxy or custom proxy URLs\n\n=======');
+    }
 
     const requestQueue = await Apify.openRequestQueue();
 
@@ -97,8 +102,10 @@ Apify.main(async () => {
         requestQueue,
         minConcurrency: 10,
         maxConcurrency: 50,
-        maxRequestRetries: 2,
+        maxRequestRetries: 3,
         handlePageTimeoutSecs: 1800,
+        proxyConfiguration,
+        useSessionPool: true,
 
         handlePageFunction: async ({ request, body, $ }) => {
             log.info(`Processing ${request.url}...`);
@@ -115,6 +122,7 @@ Apify.main(async () => {
                 const allCategoryLinks = $('a.leftnav-item-link');
                 if (allCategoryLinks.length === 0) {
                     await Apify.setValue('home_html', body, { contentType: 'text/html' });
+                    throw new Error('Something wrong! Retrying...');
                 }
 
                 for (let index = 0; index < allCategoryLinks.length; index++) {
@@ -148,7 +156,6 @@ Apify.main(async () => {
                     await requestQueue.addRequest({ url: href, userData: { label: 'shop' } });
                     await delay(5000);
                 }
-
             } else if (request.userData.label === 'shop') {
                 if (checkLimit()) {
                     return;
@@ -277,7 +284,16 @@ Apify.main(async () => {
                         userData: { label: 'list', origin: originUrl, total: pageCount, params: paramsObj } });
                 }
             } else if (request.userData.label === 'item') {
-                const pageResults = extractData(request, body, $);
+                let json;
+                try {
+                    const scriptData = $('script[data-bootstrap="page/product"]').text();
+                    json = JSON.parse(scriptData);
+                } catch (e) {
+                    await Apify.setValue('product_html', body, { contentType: 'text/html' });
+                    throw new Error('Something wrong! Retrying...');
+                }
+
+                const pageResults = extractData(request, body, $, json);
                 let userResult;
 
                 if (extendOutputFunction) {
@@ -302,8 +318,6 @@ Apify.main(async () => {
         handleFailedRequestFunction: async ({ request }) => {
             log.info(`Request ${request.url} failed twice.`);
         },
-
-        ...proxyConf,
     });
 
     // Run the crawler and wait for it to finish.

@@ -12,9 +12,9 @@ Bloomingdales Scraper is an [Apify actor](https://apify.com/actors) for extracti
 | Field | Type | Description | Default value
 | ----- | ---- | ----------- | -------------|
 | startUrls | array | List of [Request](https://sdk.apify.com/docs/api/request#docsNav) objects that will be deeply crawled. The URL can be home page like `https://www.bloomingdales.com/` or category page `https://www.bloomingdales.com/shop/makeup-perfume-beauty/luxury-lip-balm?id=1005921` or detail page `https://www.bloomingdales.com/shop/product/laura-mercier-lip-balm-spf-15?ID=519181&CategoryID=1005921`. | `[{ "url": "https://www.bloomingdales.com/" }]`|
-| maxItems | number | Maximum number of actor pages that will be scraped | all found |
+| maxItems | number | Maximum number of detail/product page that will be scraped. Each product may have more than one color corresponding to more than one items in dataset | all found |
 | extendOutputFunction | string | Function that takes a Cheerio handle ($) as argument and returns data that will be merged with the result output. More information in [Extend output function](#extend-output-function) | |
-| proxyConfiguration | object | Proxy settings of the run. This actor works better with the Apify proxy group SHADER. If you have access to this Apify proxy group, leave the default settings. If not, you can use other Apify proxy groups or you can set `{ "useApifyProxy": false" }` to disable proxy usage | `{ "useApifyProxy": true, "apifyProxyGroups": ["SHADER"] }`|
+| proxyConfiguration | object | Proxy settings of the run and the proxy is required. This actor works better with the Apify proxy group SHADER. If not, you can use other Apify proxy groups | `{ "useApifyProxy": true }`|
 
 ### Output
 
