@@ -113,6 +113,9 @@ Apify.main(async () => {
                 }
 
                 const allCategoryLinks = $('a.leftnav-item-link');
+                if (allCategoryLinks.length === 0) {
+                    await Apify.setValue('home_html', body, { contentType: 'text/html' });
+                }
 
                 for (let index = 0; index < allCategoryLinks.length; index++) {
                     if (checkLimit()) {
@@ -122,7 +125,7 @@ Apify.main(async () => {
                     const href = `${WEBSITE}${$(allCategoryLinks[index]).attr('href')}`;
                     const { pathname } = url.parse(href);
                     const parts = pathname.split('/');
-                    
+
                     if (parts.length === 3) {
                         await requestQueue.addRequest({ url: href, userData: { label: 'topshop' } });
                     } else {

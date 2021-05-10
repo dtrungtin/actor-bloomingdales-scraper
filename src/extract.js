@@ -1,6 +1,8 @@
 const Apify = require('apify');
 const querystring = require('querystring');
 
+const { log } = Apify.utils;
+
 function extractData(request, html, $) {
     // <script data-bootstrap="page/product" type="application/json"></script>
     const scriptData = $('script[data-bootstrap="page/product"]').text();
@@ -36,10 +38,13 @@ function extractData(request, html, $) {
         const { images } = colorObj.imagery;
         const imageList = [];
         const imageUrl = json.product.urlTemplate.product;
-        for (const image of Object.values(images)) {
-            imageList.push({
-                src: imageUrl + image.filePath,
-            });
+
+        if (images) {
+            for (const image of Object.values(images)) {
+                imageList.push({
+                    src: imageUrl + image.filePath,
+                });
+            }
         }
 
         const result = {
