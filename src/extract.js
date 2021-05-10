@@ -1,8 +1,11 @@
 const Apify = require('apify');
 const querystring = require('querystring');
 
-function extractData(request, html, $, json) {
+function extractData(request, html, $) {
     // <script data-bootstrap="page/product" type="application/json"></script>
+    const scriptData = $('script[data-bootstrap="page/product"]')[0];
+    const text = scriptData.children[0].data.trim();
+    const json = JSON.parse(text);
     const params = querystring.parse(request.url.split('?')[1]);
     const itemId = params.ID;
     const { title, description, bulletText } = json.product.detail;

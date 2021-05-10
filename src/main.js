@@ -284,16 +284,7 @@ Apify.main(async () => {
                         userData: { label: 'list', origin: originUrl, total: pageCount, params: paramsObj } });
                 }
             } else if (request.userData.label === 'item') {
-                let json;
-                try {
-                    const scriptData = $('script[data-bootstrap="page/product"]').text();
-                    json = JSON.parse(scriptData);
-                } catch (e) {
-                    await Apify.setValue('product_html', body, { contentType: 'text/html' });
-                    throw new Error('Something wrong! Retrying...');
-                }
-
-                const pageResults = extractData(request, body, $, json);
+                const pageResults = extractData(request, body, $);
                 let userResult;
 
                 if (extendOutputFunction) {
@@ -316,7 +307,7 @@ Apify.main(async () => {
 
         // This function is called if the page processing failed more than maxRequestRetries+1 times.
         handleFailedRequestFunction: async ({ request }) => {
-            log.info(`Request ${request.url} failed twice.`);
+            log.info(`Request ${request.url} failed many times.`);
         },
     });
 
