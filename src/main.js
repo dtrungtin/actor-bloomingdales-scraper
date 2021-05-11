@@ -7,7 +7,6 @@ const { extractData } = require('./extract');
 const { delay, strMapToObj, objToStrMap, isObject } = require('./utils');
 
 const { log } = Apify.utils;
-log.setLevel(log.LEVELS.DEBUG);
 
 let detailsEnqueued = 0;
 
