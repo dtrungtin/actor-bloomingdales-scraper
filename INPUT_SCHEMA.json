@@ -33,5 +33,6 @@
             "description": "The best option is usually Automatic proxy. But you can also use your own proxies",
             "prefill": { "useApifyProxy": true }
         }
-    }
+    },
+    "required": ["proxyConfig"]
 }
