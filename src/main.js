@@ -1,7 +1,6 @@
 const Apify = require('apify');
 const url = require('url');
 const querystring = require('querystring');
-const safeEval = require('safe-eval');
 
 const { extractData } = require('./extract');
 const { delay, strMapToObj, objToStrMap, isObject } = require('./utils');
@@ -29,7 +28,8 @@ Apify.main(async () => {
     let extendOutputFunctionObj;
     if (typeof extendOutputFunction === 'string' && extendOutputFunction.trim() !== '') {
         try {
-            extendOutputFunctionObj = safeEval(extendOutputFunction);
+            // eslint-disable-next-line no-eval
+            extendOutputFunctionObj = eval(extendOutputFunction);
         } catch (e) {
             throw new Error(`'extendOutputFunction' is not valid Javascript! Error: ${e}`);
         }
@@ -82,11 +82,11 @@ Apify.main(async () => {
                 if (!wasAlreadyPresent && !wasAlreadyHandled) {
                     detailsEnqueued++;
                 }
-            } else if (startUrl.includes('/shop/')) {
+            } else if (startUrl.includes('/shop/') || startUrl.includes('/buy/')) {
                 const { pathname } = url.parse(startUrl);
                 const parts = pathname.split('/');
 
-                if (parts.length === 3 && !startUrl.includes('/search/')) {
+                if (parts.length === 3 && !startUrl.includes('/search')) {
                     await requestQueue.addRequest({ url: startUrl, userData: { label: 'topshop' } });
                 } else {
                     await requestQueue.addRequest({ url: startUrl, userData: { label: 'shop' } });
@@ -99,7 +99,6 @@ Apify.main(async () => {
 
     const crawler = new Apify.CheerioCrawler({
         requestQueue,
-        minConcurrency: 10,
         maxConcurrency: 50,
         maxRequestRetries: 3,
         handlePageTimeoutSecs: 1800,
@@ -133,10 +132,12 @@ Apify.main(async () => {
                     const { pathname } = url.parse(href);
                     const parts = pathname.split('/');
 
-                    if (parts.length === 3) {
-                        await requestQueue.addRequest({ url: href, userData: { label: 'topshop' } });
-                    } else {
-                        await requestQueue.addRequest({ url: href, userData: { label: 'shop' } });
+                    if (href.includes('/shop/') || href.includes('/buy/')) {
+                        if (href.includes('/shop/') && parts.length === 3) {
+                            await requestQueue.addRequest({ url: href, userData: { label: 'topshop' } });
+                        } else {
+                            await requestQueue.addRequest({ url: href, userData: { label: 'shop' } });
+                        }
                     }
                     await delay(5000);
                 }

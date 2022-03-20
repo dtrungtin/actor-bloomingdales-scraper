@@ -31,7 +31,8 @@
             "type": "object",
             "editor": "proxy",
             "description": "The best option is usually Automatic proxy. But you can also use your own proxies",
-            "prefill": { "useApifyProxy": true }
+            "prefill": { "useApifyProxy": true, "apifyProxyGroups": ["RESIDENTIAL"] },
+            "default": { "useApifyProxy": true, "apifyProxyGroups": ["RESIDENTIAL"] }
         }
     },
     "required": ["proxyConfig"]

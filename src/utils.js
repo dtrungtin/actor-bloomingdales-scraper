@@ -20,7 +20,7 @@ function objToStrMap(obj) {
     return strMap;
 }
 
-const isObject = val => typeof val === 'object' && val !== null && !Array.isArray(val);
+const isObject = (val) => typeof val === 'object' && val !== null && !Array.isArray(val);
 
 module.exports = {
     delay,

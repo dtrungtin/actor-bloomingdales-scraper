@@ -30,7 +30,7 @@ function extractData(request, html, $) {
     const now = new Date();
 
     const { categories } = json.product.relationships.taxonomy;
-    const categoryList = categories ? categories.filter(cat => !!cat.id).map(cat => cat.name.trim()) : [];
+    const categoryList = categories ? categories.filter((cat) => !!cat.id).map((cat) => cat.name.trim()) : [];
 
     for (const colorObj of Object.values(colorMap)) {
         const color = colorObj.name;
