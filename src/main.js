@@ -86,7 +86,7 @@ Apify.main(async () => {
                 const { pathname } = url.parse(startUrl);
                 const parts = pathname.split('/');
 
-                if (parts.length === 3 && !startUrl.includes('/search')) {
+                if (parts.length === 3 && startUrl.includes('/shop/') && !startUrl.includes('/search')) {
                     await requestQueue.addRequest({ url: startUrl, userData: { label: 'topshop' } });
                 } else {
                     await requestQueue.addRequest({ url: startUrl, userData: { label: 'shop' } });
